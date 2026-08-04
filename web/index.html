@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>ProjectDock · 本地项目总控台</title>
+	<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230d1618'/%3E%3Cpath d='M14 43V21h20c10 0 16 4 16 11s-6 11-16 11H14zm10-8h10c4 0 6-1 6-3s-2-3-6-3H24v6z' fill='%233ce0c5'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div id="app" aria-busy="true">
+    <main class="boot-screen">
+      <p class="eyebrow">PROJECTDOCK / LOCAL CONTROL PLANE</p>
+      <h1>正在连接本地控制台</h1>
+      <p>读取项目、监听端口和预留状态…</p>
+    </main>
+  </div>
+  <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

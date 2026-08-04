@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23.x"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: go test ./...
+      - run: go test -race ./...
+      - run: go vet ./...
+      - run: node scripts/check-i18n.mjs
+      - run: for file in web/js/*.js; do node --check "$file"; done
+      - run: xcodebuild -project ProjectDock.xcodeproj -scheme ProjectDock -configuration Release CODE_SIGNING_ALLOWED=NO build
+

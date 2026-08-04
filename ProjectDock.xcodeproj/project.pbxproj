@@ -1,0 +1,426 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		110000000000000000000001 /* ProjectDockApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 120000000000000000000001 /* ProjectDockApp.swift */; };
+		110000000000000000000002 /* ProjectDockWidgetShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = 120000000000000000000002 /* ProjectDockWidgetShared.swift */; };
+		110000000000000000000003 /* ProjectDockWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 120000000000000000000003 /* ProjectDockWidgetBundle.swift */; };
+		110000000000000000000004 /* ProjectDockWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 120000000000000000000004 /* ProjectDockWidget.swift */; };
+		110000000000000000000005 /* ProjectDockWidgetShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = 120000000000000000000002 /* ProjectDockWidgetShared.swift */; };
+		110000000000000000000006 /* ProjectDockWidgetExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 120000000000000000000006 /* ProjectDockWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		110000000000000000000007 /* projectctl-darwin-arm64 in Resources */ = {isa = PBXBuildFile; fileRef = 12000000000000000000000B /* projectctl-darwin-arm64 */; };
+		110000000000000000000008 /* ProjectDock.icns in Resources */ = {isa = PBXBuildFile; fileRef = 12000000000000000000000C /* ProjectDock.icns */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		130000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 140000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1A0000000000000000000002;
+			remoteInfo = ProjectDockWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		150000000000000000000001 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				110000000000000000000006 /* ProjectDockWidgetExtension.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		120000000000000000000001 /* ProjectDockApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectDockApp.swift; sourceTree = "<group>"; };
+		120000000000000000000002 /* ProjectDockWidgetShared060.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectDockWidgetShared060.swift; sourceTree = "<group>"; };
+		120000000000000000000003 /* ProjectDockWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectDockWidgetBundle.swift; sourceTree = "<group>"; };
+		120000000000000000000004 /* ProjectDockWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectDockWidget.swift; sourceTree = "<group>"; };
+		120000000000000000000005 /* ProjectDock.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ProjectDock.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		120000000000000000000006 /* ProjectDockWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = wrapper.app-extension; includeInIndex = 0; path = ProjectDockWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		120000000000000000000007 /* App Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		120000000000000000000008 /* App Entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ProjectDock.entitlements; sourceTree = "<group>"; };
+		120000000000000000000009 /* Extension Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		12000000000000000000000A /* Extension Entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ProjectDockWidgetExtension.entitlements; sourceTree = "<group>"; };
+		12000000000000000000000B /* projectctl-darwin-arm64 */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; path = "work/build/projectctl-darwin-arm64"; sourceTree = SOURCE_ROOT; };
+		12000000000000000000000C /* ProjectDock.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = ProjectDock.icns; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		160000000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		160000000000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		170000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				170000000000000000000002 /* native */,
+				170000000000000000000003 /* Shared */,
+				170000000000000000000004 /* ProjectDockWidgetExtension */,
+				12000000000000000000000B /* projectctl-darwin-arm64 */,
+				170000000000000000000005 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		170000000000000000000002 /* native */ = {
+			isa = PBXGroup;
+			children = (
+				120000000000000000000001 /* ProjectDockApp.swift */,
+				12000000000000000000000C /* ProjectDock.icns */,
+				120000000000000000000007 /* App Info.plist */,
+				120000000000000000000008 /* App Entitlements */,
+			);
+			path = native;
+			sourceTree = "<group>";
+		};
+		170000000000000000000003 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				120000000000000000000002 /* ProjectDockWidgetShared060.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		170000000000000000000004 /* ProjectDockWidgetExtension */ = {
+			isa = PBXGroup;
+			children = (
+				120000000000000000000003 /* ProjectDockWidgetBundle.swift */,
+				120000000000000000000004 /* ProjectDockWidget.swift */,
+				120000000000000000000009 /* Extension Info.plist */,
+				12000000000000000000000A /* Extension Entitlements */,
+			);
+			path = ProjectDockWidgetExtension;
+			sourceTree = "<group>";
+		};
+		170000000000000000000005 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				120000000000000000000005 /* ProjectDock.app */,
+				120000000000000000000006 /* ProjectDockWidgetExtension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1A0000000000000000000001 /* ProjectDock */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1B0000000000000000000002 /* Build configuration list for PBXNativeTarget "ProjectDock" */;
+			buildPhases = (
+				1C0000000000000000000001 /* Sources */,
+				160000000000000000000001 /* Frameworks */,
+				1D0000000000000000000001 /* Resources */,
+				150000000000000000000001 /* Embed App Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1E0000000000000000000001 /* PBXTargetDependency */,
+			);
+			name = ProjectDock;
+			productName = ProjectDock;
+			productReference = 120000000000000000000005 /* ProjectDock.app */;
+			productType = "com.apple.product-type.application";
+		};
+		1A0000000000000000000002 /* ProjectDockWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1B0000000000000000000003 /* Build configuration list for PBXNativeTarget "ProjectDockWidgetExtension" */;
+			buildPhases = (
+				1C0000000000000000000002 /* Sources */,
+				160000000000000000000002 /* Frameworks */,
+				1D0000000000000000000002 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ProjectDockWidgetExtension;
+			productName = ProjectDockWidgetExtension;
+			productReference = 120000000000000000000006 /* ProjectDockWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		140000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2660;
+				LastUpgradeCheck = 2660;
+				TargetAttributes = {
+					1A0000000000000000000001 = {
+						CreatedOnToolsVersion = 26.6;
+						DevelopmentTeam = L4G2HAQ5B5;
+						ProvisioningStyle = Automatic;
+					};
+					1A0000000000000000000002 = {
+						CreatedOnToolsVersion = 26.6;
+						DevelopmentTeam = L4G2HAQ5B5;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 1B0000000000000000000001 /* Build configuration list for PBXProject "ProjectDock" */;
+			compatibilityVersion = "Xcode 16.0";
+			developmentRegion = zh_CN;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				zh_CN,
+				en,
+				Base,
+			);
+			mainGroup = 170000000000000000000001;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 170000000000000000000005 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				1A0000000000000000000001 /* ProjectDock */,
+				1A0000000000000000000002 /* ProjectDockWidgetExtension */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		1D0000000000000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				110000000000000000000007 /* projectctl-darwin-arm64 in Resources */,
+				110000000000000000000008 /* ProjectDock.icns in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1D0000000000000000000002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1C0000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				110000000000000000000001 /* ProjectDockApp.swift in Sources */,
+				110000000000000000000002 /* ProjectDockWidgetShared.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1C0000000000000000000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				110000000000000000000003 /* ProjectDockWidgetBundle.swift in Sources */,
+				110000000000000000000004 /* ProjectDockWidget.swift in Sources */,
+				110000000000000000000005 /* ProjectDockWidgetShared.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		1E0000000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1A0000000000000000000002 /* ProjectDockWidgetExtension */;
+			targetProxy = 130000000000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1F0000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		1F0000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		1F0000000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = native/ProjectDock.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = L4G2HAQ5B5;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = native/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.zhusi.ProjectDock;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		1F0000000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = native/ProjectDock.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = L4G2HAQ5B5;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = native/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.zhusi.ProjectDock;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		1F0000000000000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = ProjectDockWidgetExtension/ProjectDockWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = L4G2HAQ5B5;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ProjectDockWidgetExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.zhusi.ProjectDock.WidgetExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		1F0000000000000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = ProjectDockWidgetExtension/ProjectDockWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = L4G2HAQ5B5;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ProjectDockWidgetExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.zhusi.ProjectDock.WidgetExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1B0000000000000000000001 /* Build configuration list for PBXProject "ProjectDock" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1F0000000000000000000001 /* Debug */,
+				1F0000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1B0000000000000000000002 /* Build configuration list for PBXNativeTarget "ProjectDock" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1F0000000000000000000003 /* Debug */,
+				1F0000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1B0000000000000000000003 /* Build configuration list for PBXNativeTarget "ProjectDockWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1F0000000000000000000005 /* Debug */,
+				1F0000000000000000000006 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 140000000000000000000001 /* Project object */;
+}
