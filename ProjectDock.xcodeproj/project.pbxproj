@@ -15,6 +15,8 @@
 		110000000000000000000006 /* ProjectDockWidgetExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 120000000000000000000006 /* ProjectDockWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		110000000000000000000007 /* projectctl-darwin-arm64 in Resources */ = {isa = PBXBuildFile; fileRef = 12000000000000000000000B /* projectctl-darwin-arm64 */; };
 		110000000000000000000008 /* ProjectDock.icns in Resources */ = {isa = PBXBuildFile; fileRef = 12000000000000000000000C /* ProjectDock.icns */; };
+		110000000000000000000009 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 12000000000000000000000D /* PrivacyInfo.xcprivacy */; };
+		11000000000000000000000A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 12000000000000000000000E /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -54,6 +56,8 @@
 		12000000000000000000000A /* Extension Entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ProjectDockWidgetExtension.entitlements; sourceTree = "<group>"; };
 		12000000000000000000000B /* projectctl-darwin-arm64 */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; path = "work/build/projectctl-darwin-arm64"; sourceTree = SOURCE_ROOT; };
 		12000000000000000000000C /* ProjectDock.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = ProjectDock.icns; sourceTree = "<group>"; };
+		12000000000000000000000D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		12000000000000000000000E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -92,6 +96,7 @@
 				12000000000000000000000C /* ProjectDock.icns */,
 				120000000000000000000007 /* App Info.plist */,
 				120000000000000000000008 /* App Entitlements */,
+				12000000000000000000000D /* PrivacyInfo.xcprivacy */,
 			);
 			path = native;
 			sourceTree = "<group>";
@@ -111,6 +116,7 @@
 				120000000000000000000004 /* ProjectDockWidget.swift */,
 				120000000000000000000009 /* Extension Info.plist */,
 				12000000000000000000000A /* Extension Entitlements */,
+				12000000000000000000000E /* PrivacyInfo.xcprivacy */,
 			);
 			path = ProjectDockWidgetExtension;
 			sourceTree = "<group>";
@@ -134,6 +140,7 @@
 				1C0000000000000000000001 /* Sources */,
 				160000000000000000000001 /* Frameworks */,
 				1D0000000000000000000001 /* Resources */,
+				200000000000000000000001 /* Sign App Store Helper */,
 				150000000000000000000001 /* Embed App Extensions */,
 			);
 			buildRules = (
@@ -214,6 +221,7 @@
 			files = (
 				110000000000000000000007 /* projectctl-darwin-arm64 in Resources */,
 				110000000000000000000008 /* ProjectDock.icns in Resources */,
+				110000000000000000000009 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -221,10 +229,33 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				11000000000000000000000A /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		200000000000000000000001 /* Sign App Store Helper */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Sign App Store Helper";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"$CONFIGURATION\" != \"AppStore\" ] || [ \"${CODE_SIGNING_ALLOWED:-YES}\" = \"NO\" ]; then\n  exit 0\nfi\nHELPER=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/projectctl-darwin-arm64\"\nif [ ! -f \"$HELPER\" ]; then\n  echo \"error: missing embedded helper: $HELPER\" >&2\n  exit 1\nfi\nif [ -z \"${EXPANDED_CODE_SIGN_IDENTITY:-}\" ]; then\n  echo \"error: missing code signing identity for App Store helper\" >&2\n  exit 1\nfi\n/usr/bin/codesign --force --options runtime --sign \"$EXPANDED_CODE_SIGN_IDENTITY\" --entitlements \"$SRCROOT/native/projectctl-AppStore.entitlements\" \"$HELPER\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		1C0000000000000000000001 /* Sources */ = {

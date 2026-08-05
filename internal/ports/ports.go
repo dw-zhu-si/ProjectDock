@@ -21,6 +21,16 @@ type Scanner interface {
 	List(context.Context) ([]model.PortListener, error)
 }
 
+// DisabledScanner is used by the Mac App Store build. App Sandbox does not
+// permit the lsof-based system-wide process inspection used by the direct
+// distribution, so the Store runtime must model this capability as unavailable
+// instead of repeatedly returning a service error.
+type DisabledScanner struct{}
+
+func (DisabledScanner) List(context.Context) ([]model.PortListener, error) {
+	return []model.PortListener{}, nil
+}
+
 type LsofScanner struct {
 	Path string
 }

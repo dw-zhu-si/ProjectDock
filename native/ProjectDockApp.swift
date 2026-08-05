@@ -270,9 +270,89 @@ final class ProjectDockApp: NSObject, NSApplicationDelegate, NSWindowDelegate, W
             installMainMenu()
             sendLoginItemState()
             WidgetCenter.shared.reloadAllTimelines()
+        case "pickDirectory":
+            guard let requestID = payload["requestId"] as? String else { return }
+            pickAuthorizedDirectory(requestID: requestID, purpose: payload["purpose"] as? String ?? "project")
         default:
             break
         }
+    }
+
+    private func pickAuthorizedDirectory(requestID: String, purpose: String) {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.canCreateDirectories = purpose == "install"
+        panel.prompt = localized("confirm")
+        switch purpose {
+        case "install": panel.message = "选择 GitHub 项目的安装目录"
+        case "scan": panel.message = "选择 ProjectDock 要扫描的父目录"
+        default: panel.message = "选择要由 ProjectDock 管理的项目目录"
+        }
+        let completion: (NSApplication.ModalResponse) -> Void = { [weak self] response in
+            guard let self else { return }
+            guard response == .OK, let url = panel.url else {
+                self.sendDirectoryPickerResult(requestID: requestID, error: "已取消选择。")
+                return
+            }
+            do {
+                let bookmark = try url.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil)
+                self.authorizeDirectory(bookmark: bookmark, requestID: requestID)
+            } catch {
+                self.sendDirectoryPickerResult(requestID: requestID, error: error.localizedDescription)
+            }
+        }
+        if let window {
+            panel.beginSheetModal(for: window, completionHandler: completion)
+        } else {
+            completion(panel.runModal())
+        }
+    }
+
+    private func authorizeDirectory(bookmark: Data, requestID: String) {
+        URLSession.shared.dataTask(with: projectDockURL.appending(path: "api/session")) { [weak self] data, response, error in
+            guard let self else { return }
+            guard error == nil,
+                  (response as? HTTPURLResponse)?.statusCode == 200,
+                  let data,
+                  let session = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let token = session["token"] as? String
+            else {
+                DispatchQueue.main.async { self.sendDirectoryPickerResult(requestID: requestID, error: "无法获取本地授权会话。") }
+                return
+            }
+            var request = URLRequest(url: projectDockURL.appending(path: "api/directories/authorize"))
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue(token, forHTTPHeaderField: "X-ProjectDock-Token")
+            request.httpBody = try? JSONSerialization.data(withJSONObject: ["bookmark": bookmark.base64EncodedString()])
+            URLSession.shared.dataTask(with: request) { data, response, error in
+                var path: String?
+                var message: String?
+                if let data, let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    path = payload["path"] as? String
+                    message = (payload["error"] as? [String: Any])?["message"] as? String
+                }
+                DispatchQueue.main.async {
+                    if error == nil, (response as? HTTPURLResponse)?.statusCode == 200, let path {
+                        self.sendDirectoryPickerResult(requestID: requestID, path: path)
+                    } else {
+                        self.sendDirectoryPickerResult(requestID: requestID, error: message ?? error?.localizedDescription ?? "目录授权失败。")
+                    }
+                }
+            }.resume()
+        }.resume()
+    }
+
+    private func sendDirectoryPickerResult(requestID: String, path: String? = nil, error: String? = nil) {
+        var payload: [String: Any] = ["kind": "directoryPicker", "requestId": requestID]
+        if let path { payload["path"] = path }
+        if let error { payload["error"] = error }
+        guard let data = try? JSONSerialization.data(withJSONObject: payload),
+              let json = String(data: data, encoding: .utf8)
+        else { return }
+        webView?.evaluateJavaScript("window.projectDockReceiveNativeState?.(\(json));")
     }
 
     private var loginItemSelected: Bool {
@@ -415,6 +495,9 @@ final class ProjectDockApp: NSObject, NSApplicationDelegate, NSWindowDelegate, W
             "serve", "--listen", "127.0.0.1:\(projectDockPort)", "--open=false",
             "--parent-pid", String(ProcessInfo.processInfo.processIdentifier),
         ]
+#if APP_STORE
+        process.arguments?.append("--app-store")
+#endif
         process.standardOutput = FileHandle.nullDevice
         process.standardError = FileHandle.nullDevice
         process.terminationHandler = { [weak self] terminatedProcess in

@@ -71,6 +71,66 @@ func testServerWithScanner(t *testing.T, scanner ports.Scanner) *Server {
 	return result
 }
 
+func testAppStoreServer(t *testing.T, scanner ports.Scanner) *Server {
+	t.Helper()
+	st := store.New(t.TempDir())
+	portService := ports.NewService(st, scanner)
+	projectService := projects.NewService(st, portService)
+	result, err := NewWithOptions(st, portService, projectService, apiprobe.NewService(), log.New(io.Discard, "", 0), Options{AppStore: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return result
+}
+
+func TestAppStoreSnapshotSkipsPortScannerAndReportsCapabilities(t *testing.T) {
+	scanner := &countingScanner{}
+	server := testAppStoreServer(t, scanner)
+	request := httptest.NewRequest(http.MethodGet, "http://127.0.0.1/api/snapshot", nil)
+	request.Host = "127.0.0.1"
+	response := httptest.NewRecorder()
+	server.Handler().ServeHTTP(response, request)
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", response.Code, response.Body.String())
+	}
+	if scanner.calls.Load() != 0 {
+		t.Fatal("App Store snapshot invoked the system port scanner")
+	}
+	var snapshot Snapshot
+	if err := json.Unmarshal(response.Body.Bytes(), &snapshot); err != nil {
+		t.Fatal(err)
+	}
+	if !snapshot.Capabilities.AppStore || snapshot.Capabilities.PortMonitoring || snapshot.Capabilities.ProjectLifecycle || snapshot.Capabilities.FullDelete {
+		t.Fatalf("unexpected App Store capabilities: %#v", snapshot.Capabilities)
+	}
+}
+
+func TestAppStoreServerRejectsUnavailableOperations(t *testing.T) {
+	server := testAppStoreServer(t, emptyScanner{})
+	for _, test := range []struct {
+		method string
+		path   string
+		body   string
+	}{
+		{http.MethodGet, "/api/ports", ""},
+		{http.MethodPost, "/api/projects/demo/start", `{}`},
+		{http.MethodPost, "/api/projects/demo/delete", `{"removeFiles":true,"confirmation":"demo"}`},
+		{http.MethodPost, "/api/projects/sync-registry", `{}`},
+	} {
+		request := httptest.NewRequest(test.method, "http://127.0.0.1"+test.path, bytes.NewBufferString(test.body))
+		request.Host = "127.0.0.1"
+		if test.body != "" {
+			request.Header.Set("Content-Type", "application/json")
+			request.Header.Set("X-ProjectDock-Token", server.token)
+		}
+		response := httptest.NewRecorder()
+		server.Handler().ServeHTTP(response, request)
+		if response.Code != http.StatusNotImplemented {
+			t.Fatalf("%s returned %d instead of 501: %s", test.path, response.Code, response.Body.String())
+		}
+	}
+}
+
 func TestReadSnapshotsShareOnePortObservation(t *testing.T) {
 	scanner := &countingScanner{}
 	server := testServerWithScanner(t, scanner)

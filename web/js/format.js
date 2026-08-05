@@ -48,12 +48,16 @@ export function actionLabel(action) {
     "project.external-stop": "停止外部项目",
     "project.exit": "项目退出",
     "project.sync": "同步项目",
+    "project.scan": "扫描项目",
     "registry.sync": "同步三端项目",
     "port.allocate": "分配端口",
     "port.unassign": "取消分配",
     "port.reserve": "预留端口",
     "port.release": "释放端口",
     "api.probe": "接口调用",
+	"settings.ai": "保存 AI 设置",
+	"settings.ai.verify": "验证 AI 连接",
+	"github.install": "安装 GitHub 项目",
   }[action] || action);
 }
 

@@ -13,7 +13,7 @@ func TestRunProjectActionViaAPIUsesDesktopServiceToken(t *testing.T) {
 		writer.Header().Set("Content-Type", "application/json")
 		switch request.URL.Path {
 		case "/api/health":
-			_, _ = writer.Write([]byte(`{"service":"projectdock","status":"ok","version":"0.10.0"}`))
+			_, _ = writer.Write([]byte(`{"service":"projectdock","status":"ok","version":"0.10.1"}`))
 		case "/api/session":
 			_, _ = writer.Write([]byte(`{"token":"test-token"}`))
 		case "/api/projects/demo-app/start":

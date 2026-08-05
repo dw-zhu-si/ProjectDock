@@ -10,6 +10,8 @@ import {
 } from "./format.js";
 import { getLocalePreference, localizeDOM, supportedLocales, t } from "./i18n.js";
 
+let currentCapabilities = {};
+
 export function renderShell(root) {
   root.innerHTML = `
     <div class="app-shell">
@@ -277,6 +279,7 @@ function panelHeader(title, subtitle, target = "") {
 }
 
 export function renderSnapshot(snapshot, filters = {}) {
+	currentCapabilities = snapshot.capabilities || {};
   document.querySelector("#project-count").textContent = snapshot.projects.length;
   document.querySelector("#port-count").textContent = new Set(snapshot.ports.map((item) => item.port)).size;
   renderMetrics(snapshot);
@@ -293,12 +296,15 @@ function renderMetrics(snapshot) {
   const running = snapshot.projects.filter((project) => ["running", "starting", "stopping", "external"].includes(project.run.state)).length;
   const pool = snapshot.portPool?.summary || {};
   const uniqueListeningPorts = new Set(snapshot.ports.map((item) => item.port)).size;
-  const metrics = [
+  let metrics = [
     ["已登记项目", snapshot.projects.length, t("{running} 个运行 · {ignored} 个已忽略", { running, ignored: snapshot.ignoredCount || 0 }), running ? "success" : "neutral"],
     ["监听端口", uniqueListeningPorts, "本机唯一 TCP LISTEN", "info"],
     ["持久分配", pool.allocated || 0, t("{count} 个正在监听", { count: pool.activeAllocations || 0 }), pool.activeAllocations ? "info" : "success"],
 		["最近同步", timeAgo(snapshot.generatedAt), "自动刷新间隔 5 秒", "neutral"],
   ];
+	if (currentCapabilities.portMonitoring === false) {
+		metrics = [metrics[0], ["目录授权", "安全作用域", "仅访问系统选择的目录", "success"], metrics[3]];
+	}
   document.querySelector("#metrics").innerHTML = metrics.map(([label, value, detail, tone]) => `
     <article class="metric">
       <span>${escapeHTML(label)}</span>
@@ -316,7 +322,11 @@ function renderProjects(projects, filter) {
       <div class="table-row table-head" role="row"><span>项目</span><span>来源</span><span>分配端口</span><span>状态</span><span class="align-right">操作</span></div>
       ${visible.map(projectRow).join("")}
     </div>
-  ` : emptyState("没有匹配的可启动项目", projects.length ? "换个关键词试试。" : "添加具备明确启动方式的项目后，会在这里显示。", "new-project", "登记项目");
+  ` : emptyState(
+	currentCapabilities.projectLifecycle === false ? "没有匹配的已授权项目" : "没有匹配的可启动项目",
+	projects.length ? "换个关键词试试。" : (currentCapabilities.projectLifecycle === false ? "选择一个项目目录，即可安全登记和扫描。" : "添加具备明确启动方式的项目后，会在这里显示。"),
+	"new-project", "登记项目",
+  );
   document.querySelector("#projects-table").innerHTML = html;
   const select = document.querySelector("#reservation-project");
   const current = select.value;
@@ -343,10 +353,10 @@ function projectRow(project) {
       <span class="ports-inline">${portMarkup}</span>
       <span><span class="state-badge ${status.tone}"><i></i>${escapeHTML(status.label)}</span>${project.run.pid ? `<small class="pid-label">PID ${project.run.pid}</small>` : ""}</span>
       <span class="row-actions align-right">
-        <button class="mini-button" type="button" data-action="logs" data-project="${escapeHTML(project.id)}">日志</button>
+		${currentCapabilities.projectLifecycle === false ? "" : `<button class="mini-button" type="button" data-action="logs" data-project="${escapeHTML(project.id)}">日志</button>`}
         <button class="mini-button" type="button" data-action="edit-project" data-project="${escapeHTML(project.id)}" ${managedActive ? "disabled" : ""}>编辑</button>
         <button class="mini-button" type="button" data-action="delete-project" data-project="${escapeHTML(project.id)}" ${active ? "disabled" : ""}>删除</button>
-        <button class="mini-button ${lifecycle.tone}" type="button" data-action="${lifecycle.action}" data-project="${escapeHTML(project.id)}" ${lifecycle.disabled ? `disabled title="${escapeHTML(lifecycle.title)}"` : ""}>${escapeHTML(lifecycle.label)}</button>
+		${currentCapabilities.projectLifecycle === false ? "" : `<button class="mini-button ${lifecycle.tone}" type="button" data-action="${lifecycle.action}" data-project="${escapeHTML(project.id)}" ${lifecycle.disabled ? `disabled title="${escapeHTML(lifecycle.title)}"` : ""}>${escapeHTML(lifecycle.label)}</button>`}
       </span>
     </div>
   `;
@@ -427,7 +437,7 @@ function renderDashboard(snapshot) {
   projectTarget.innerHTML = snapshot.projects.length ? `<div class="dashboard-list">${snapshot.projects.slice(0, 5).map((project) => `
     <article class="dashboard-project">
       <span class="project-monogram">${escapeHTML(project.name.slice(0, 1).toUpperCase())}</span>
-      <div><strong>${escapeHTML(project.name)}</strong><small>${project.syncMode === "auto" ? "自动同步" : escapeHTML(sourceLabel(project.source))} · ${project.ports.length ? `:${project.ports.join(", :")}` : "未声明端口"}</small></div>
+      <div><strong>${escapeHTML(project.name)}</strong><small>${project.syncMode === "auto" ? t("自动同步") : escapeHTML(sourceLabel(project.source))} · ${project.ports.length ? `:${project.ports.join(", :")}` : t("未声明端口")}</small></div>
       <span class="state-badge ${projectStatus(project).tone}"><i></i>${escapeHTML(projectStatus(project).label)}</span>
       ${dashboardLifecycleButton(project)}
     </article>
@@ -439,7 +449,7 @@ function renderDashboard(snapshot) {
   `).join("")}</div>${allocations.length > 8 ? `<p class="list-footnote">另有 ${allocations.length - 8} 个持久分配</p>` : ""}` : `<p class="quiet-empty">当前没有持久端口分配</p>`;
 
   document.querySelector("#dashboard-audit").innerHTML = snapshot.audit.length ? `<div class="timeline">${snapshot.audit.slice(0, 6).map((event) => `
-    <div><i class="${event.status === "success" ? "success" : "danger"}"></i><span><strong>${escapeHTML(actionLabel(event.action))}</strong><small>${escapeHTML(event.projectId || (event.port ? `端口 ${event.port}` : "本地操作"))}</small></span><time>${timeAgo(event.timestamp)}</time></div>
+    <div><i class="${event.status === "success" ? "success" : "danger"}"></i><span><strong>${escapeHTML(actionLabel(event.action))}</strong><small>${escapeHTML(event.projectId || (event.port ? `${t("端口")} ${event.port}` : t("本地操作")))}</small></span><time>${timeAgo(event.timestamp)}</time></div>
   `).join("")}</div>` : `<p class="quiet-empty">暂无操作记录</p>`;
 }
 
@@ -447,11 +457,12 @@ function projectStatus(project) {
   if (project.run.state === "running" || project.run.state === "starting" || project.run.state === "stopping") {
     return { label: stateLabel(project.run.state), tone: stateTone(project.run.state) };
   }
-  if (project.run.state === "external") return { label: "外部运行", tone: "info" };
-  if (project.run.state === "conflict") return { label: "端口冲突", tone: "danger" };
-  if (!project.pathAvailable) return { label: "路径不可用", tone: "danger" };
-  if (project.launchSource === "archived") return { label: "已归档 · 仅登记", tone: "neutral" };
-  if (!project.configuredToStart) return { label: "已登记 · 启动未接入", tone: "neutral" };
+  if (project.run.state === "external") return { label: t("外部运行"), tone: "info" };
+  if (project.run.state === "conflict") return { label: t("端口冲突"), tone: "danger" };
+  if (!project.pathAvailable) return { label: t("路径不可用"), tone: "danger" };
+	if (currentCapabilities.projectLifecycle === false) return { label: t("已授权 · 已登记"), tone: "success" };
+  if (project.launchSource === "archived") return { label: t("已归档 · 仅登记"), tone: "neutral" };
+  if (!project.configuredToStart) return { label: t("已登记 · 启动未接入"), tone: "neutral" };
   return { label: stateLabel(project.run.state), tone: stateTone(project.run.state) };
 }
 
@@ -481,6 +492,7 @@ function projectLifecycleAction(project) {
 }
 
 function dashboardLifecycleButton(project) {
+	if (currentCapabilities.projectLifecycle === false) return "";
   const lifecycle = projectLifecycleAction(project);
   return `<button class="mini-button ${lifecycle.tone}" type="button" data-action="${lifecycle.action}" data-project="${escapeHTML(project.id)}" ${lifecycle.disabled ? `disabled title="${escapeHTML(lifecycle.title)}"` : ""}>${escapeHTML(lifecycle.label)}</button>`;
 }

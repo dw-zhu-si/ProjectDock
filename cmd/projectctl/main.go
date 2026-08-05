@@ -28,7 +28,7 @@ import (
 	"projectdock/internal/store"
 )
 
-const version = "0.10.0"
+const version = "0.10.1"
 
 var projectDockAPIBaseURL = "http://127.0.0.1:43110"
 
@@ -123,6 +123,7 @@ func runServe(args []string, st *store.Store, portService *ports.Service, projec
 	listen := flags.String("listen", "127.0.0.1:43110", "本地监听地址")
 	openBrowser := flags.Bool("open", true, "启动后打开浏览器")
 	parentPID := flags.Int("parent-pid", 0, "可选宿主进程 PID；宿主退出时同步停止服务")
+	appStore := flags.Bool("app-store", false, "启用 Mac App Store 沙盒能力边界")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
@@ -138,7 +139,11 @@ func runServe(args []string, st *store.Store, portService *ports.Service, projec
 	if *parentPID > 0 && os.Getppid() != *parentPID {
 		return errors.New("parent-pid 与实际宿主进程不匹配")
 	}
-	app, err := server.New(st, portService, projectService, apiprobe.NewService(), log.Default(), version)
+	if *appStore {
+		portService = ports.NewService(st, ports.DisabledScanner{})
+		projectService = projects.NewService(st, portService)
+	}
+	app, err := server.NewWithOptions(st, portService, projectService, apiprobe.NewService(), log.Default(), server.Options{AppStore: *appStore}, version)
 	if err != nil {
 		return err
 	}

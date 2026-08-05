@@ -25,6 +25,7 @@ import (
 	"projectdock/internal/model"
 	"projectdock/internal/ports"
 	"projectdock/internal/projects"
+	"projectdock/internal/sandboxbookmark"
 	"projectdock/internal/store"
 	"projectdock/internal/widget"
 	webassets "projectdock/web"
@@ -38,7 +39,9 @@ type Server struct {
 	picker          folders.Picker
 	directoryPicker folders.DirectoryPicker
 	ai              *ai.Service
-	github          installer.GitHubInstaller
+	github          installer.RepositoryInstaller
+	bookmarks       *sandboxbookmark.Manager
+	capabilities    Capabilities
 	token           string
 	version         string
 	logger          *log.Logger
@@ -52,6 +55,22 @@ type Snapshot struct {
 	Reservations []model.PortReservation `json:"reservations"`
 	Audit        []model.AuditEvent      `json:"audit"`
 	IgnoredCount int                     `json:"ignoredCount"`
+	Capabilities Capabilities            `json:"capabilities"`
+}
+
+type Capabilities struct {
+	AppStore         bool `json:"appStore"`
+	PortMonitoring   bool `json:"portMonitoring"`
+	ProjectLifecycle bool `json:"projectLifecycle"`
+	FullDelete       bool `json:"fullDelete"`
+	RegistrySync     bool `json:"registrySync"`
+	GitHubInstall    bool `json:"githubInstall"`
+	DirectoryAccess  bool `json:"directoryAccess"`
+	APIProbe         bool `json:"apiProbe"`
+}
+
+type Options struct {
+	AppStore bool
 }
 
 type importRequest struct {
@@ -73,6 +92,10 @@ type importReport struct {
 }
 
 func New(st *store.Store, portService *ports.Service, projectService *projects.Service, probeService *apiprobe.Service, logger *log.Logger, appVersion ...string) (*Server, error) {
+	return NewWithOptions(st, portService, projectService, probeService, logger, Options{}, appVersion...)
+}
+
+func NewWithOptions(st *store.Store, portService *ports.Service, projectService *projects.Service, probeService *apiprobe.Service, logger *log.Logger, options Options, appVersion ...string) (*Server, error) {
 	token, err := sessionToken()
 	if err != nil {
 		return nil, err
@@ -84,10 +107,26 @@ func New(st *store.Store, portService *ports.Service, projectService *projects.S
 	if len(appVersion) > 0 && strings.TrimSpace(appVersion[0]) != "" {
 		version = strings.TrimSpace(appVersion[0])
 	}
+	capabilities := Capabilities{
+		AppStore: options.AppStore, PortMonitoring: !options.AppStore,
+		ProjectLifecycle: !options.AppStore, FullDelete: !options.AppStore,
+		RegistrySync: !options.AppStore, GitHubInstall: true,
+		DirectoryAccess: true, APIProbe: true,
+	}
+	var bookmarks *sandboxbookmark.Manager
+	var github installer.RepositoryInstaller = installer.GitHubInstaller{}
+	if options.AppStore {
+		bookmarks, err = sandboxbookmark.New(st.Dir())
+		if err != nil {
+			return nil, err
+		}
+		github = installer.ZIPInstaller{}
+	}
 	return &Server{
 		store: st, ports: portService, projects: projectService, probe: probeService,
 		picker: folders.NewPicker(), directoryPicker: folders.NewDirectoryPicker(),
-		ai: ai.NewService(st.Dir()), github: installer.GitHubInstaller{}, token: token, version: version, logger: logger,
+		ai: ai.NewService(st.Dir()), github: github, bookmarks: bookmarks,
+		capabilities: capabilities, token: token, version: version, logger: logger,
 	}, nil
 }
 
@@ -103,6 +142,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/projects/pick", s.requireMutation(s.handleProjectPick))
 	mux.HandleFunc("POST /api/projects/scan", s.requireMutation(s.handleProjectScan))
 	mux.HandleFunc("POST /api/directories/pick", s.requireMutation(s.handleDirectoryPick))
+	mux.HandleFunc("POST /api/directories/authorize", s.requireMutation(s.handleDirectoryAuthorize))
 	mux.HandleFunc("GET /api/settings/ai", s.handleAISettingsGet)
 	mux.HandleFunc("PUT /api/settings/ai", s.requireMutation(s.handleAISettingsSave))
 	mux.HandleFunc("POST /api/settings/ai/verify", s.requireMutation(s.handleAISettingsVerify))
@@ -144,7 +184,12 @@ func (s *Server) Serve(ctx context.Context, address string) error {
 	if err != nil {
 		return fmt.Errorf("监听 ProjectDock: %w", err)
 	}
-	go s.registrySyncLoop(ctx)
+	if s.capabilities.RegistrySync {
+		go s.registrySyncLoop(ctx)
+	}
+	if s.bookmarks != nil {
+		defer s.bookmarks.Close()
+	}
 	httpServer := &http.Server{
 		Handler:           s.Handler(),
 		ReadHeaderTimeout: 5 * time.Second,
@@ -173,7 +218,7 @@ func (s *Server) Serve(ctx context.Context, address string) error {
 
 func (s *Server) handleHealth(writer http.ResponseWriter, request *http.Request) {
 	writeJSON(writer, http.StatusOK, map[string]any{
-		"status": "ok", "service": "projectdock", "version": s.version, "time": time.Now(),
+		"status": "ok", "service": "projectdock", "version": s.version, "time": time.Now(), "capabilities": s.capabilities,
 	})
 }
 
@@ -183,7 +228,11 @@ func (s *Server) handleSession(writer http.ResponseWriter, request *http.Request
 }
 
 func (s *Server) handleSnapshot(writer http.ResponseWriter, request *http.Request) {
-	listeners, err := s.ports.Observe(request.Context())
+	listeners := []model.PortListener{}
+	var err error
+	if s.capabilities.PortMonitoring {
+		listeners, err = s.ports.Observe(request.Context())
+	}
 	if err != nil {
 		writeError(writer, http.StatusServiceUnavailable, "snapshot_ports", err)
 		return
@@ -193,27 +242,38 @@ func (s *Server) handleSnapshot(writer http.ResponseWriter, request *http.Reques
 		writeError(writer, http.StatusInternalServerError, "snapshot_projects", err)
 		return
 	}
-	projectViews = projects.VisibleInControlPanel(projectViews)
+	if s.capabilities.ProjectLifecycle {
+		projectViews = projects.VisibleInControlPanel(projectViews)
+	}
 	registry, err := s.store.Load(request.Context())
 	if err != nil {
 		writeError(writer, http.StatusInternalServerError, "snapshot_registry", err)
 		return
 	}
 	audit := newestAudit(registry.Audit, 100)
-	portPool, err := s.ports.PoolWithListeners(request.Context(), listeners, 3000, 49999, 20)
-	if err != nil {
-		writeError(writer, http.StatusServiceUnavailable, "snapshot_port_pool", err)
-		return
+	portPool := ports.PoolSnapshot{From: 3000, To: 49999, Allocations: []ports.PortAllocation{}, Reservations: []model.PortReservation{}, UnassignedListeners: []model.PortListener{}, Suggestions: []int{}}
+	reservations := []model.PortReservation{}
+	if s.capabilities.PortMonitoring {
+		portPool, err = s.ports.PoolWithListeners(request.Context(), listeners, 3000, 49999, 20)
+		if err != nil {
+			writeError(writer, http.StatusServiceUnavailable, "snapshot_port_pool", err)
+			return
+		}
+		reservations = registry.Reservations
 	}
 	writeJSON(writer, http.StatusOK, Snapshot{
 		GeneratedAt: time.Now(), Projects: projectViews, Ports: listeners,
-		PortPool: portPool, Reservations: registry.Reservations,
-		Audit: audit, IgnoredCount: len(registry.IgnoredPaths),
+		PortPool: portPool, Reservations: reservations,
+		Audit: audit, IgnoredCount: len(registry.IgnoredPaths), Capabilities: s.capabilities,
 	})
 }
 
 func (s *Server) handleWidgetSnapshot(writer http.ResponseWriter, request *http.Request) {
-	listeners, err := s.ports.Observe(request.Context())
+	listeners := []model.PortListener{}
+	var err error
+	if s.capabilities.PortMonitoring {
+		listeners, err = s.ports.Observe(request.Context())
+	}
 	if err != nil {
 		writeError(writer, http.StatusServiceUnavailable, "widget_ports", err)
 		return
@@ -223,28 +283,44 @@ func (s *Server) handleWidgetSnapshot(writer http.ResponseWriter, request *http.
 		writeError(writer, http.StatusInternalServerError, "widget_projects", err)
 		return
 	}
-	projectViews = projects.VisibleInControlPanel(projectViews)
+	if s.capabilities.ProjectLifecycle {
+		projectViews = projects.VisibleInControlPanel(projectViews)
+	}
 	registry, err := s.store.Load(request.Context())
 	if err != nil {
 		writeError(writer, http.StatusInternalServerError, "widget_registry", err)
 		return
 	}
-	allocations, err := s.ports.ListAllocationsWithListeners(request.Context(), listeners)
-	if err != nil {
-		writeError(writer, http.StatusServiceUnavailable, "widget_allocations", err)
-		return
+	allocations := []ports.PortAllocation{}
+	reservations := []model.PortReservation{}
+	if s.capabilities.PortMonitoring {
+		allocations, err = s.ports.ListAllocationsWithListeners(request.Context(), listeners)
+		if err != nil {
+			writeError(writer, http.StatusServiceUnavailable, "widget_allocations", err)
+			return
+		}
+		reservations = registry.Reservations
 	}
 	writer.Header().Set("Cache-Control", "no-store")
-	writeJSON(writer, http.StatusOK, widget.Build(projectViews, listeners, allocations, registry.Reservations, time.Now()))
+	writeJSON(writer, http.StatusOK, widget.Build(projectViews, listeners, allocations, reservations, time.Now()))
 }
 
 func (s *Server) handleProjectsList(writer http.ResponseWriter, request *http.Request) {
-	result, err := s.projects.List(request.Context())
+	var result []projects.ProjectView
+	var err error
+	if s.capabilities.PortMonitoring {
+		result, err = s.projects.List(request.Context())
+	} else {
+		result, err = s.projects.ListWithListeners(request.Context(), []model.PortListener{})
+	}
 	if err != nil {
 		writeError(writer, http.StatusInternalServerError, "projects_list", err)
 		return
 	}
-	writeJSON(writer, http.StatusOK, projects.VisibleInControlPanel(result))
+	if s.capabilities.ProjectLifecycle {
+		result = projects.VisibleInControlPanel(result)
+	}
+	writeJSON(writer, http.StatusOK, result)
 }
 
 func (s *Server) handleProjectUpsert(writer http.ResponseWriter, request *http.Request) {
@@ -259,6 +335,15 @@ func (s *Server) handleProjectUpsert(writer http.ResponseWriter, request *http.R
 			return
 		}
 		project.ID = id
+	}
+	if s.capabilities.AppStore {
+		if !s.pathAuthorized(project.Path) {
+			writeError(writer, http.StatusForbidden, "directory_authorization_required", errors.New("请先用系统目录选择器授权该项目路径"))
+			return
+		}
+		project.Ports = nil
+		project.StartCommand = ""
+		project.StopCommand = ""
 	}
 	saved, err := s.projects.Upsert(request.Context(), project)
 	if err != nil {
@@ -275,6 +360,14 @@ func (s *Server) handleProjectImport(writer http.ResponseWriter, request *http.R
 		writeError(writer, http.StatusBadRequest, "invalid_import", err)
 		return
 	}
+	if s.capabilities.AppStore {
+		for _, path := range input.Paths {
+			if !s.pathAuthorized(path) {
+				writeError(writer, http.StatusForbidden, "directory_authorization_required", errors.New("导入路径不在用户已授权目录内"))
+				return
+			}
+		}
+	}
 	report := s.importPaths(request.Context(), input.Paths, input.Source)
 	status := http.StatusOK
 	if report.Imported == 0 && report.Skipped > 0 {
@@ -284,6 +377,10 @@ func (s *Server) handleProjectImport(writer http.ResponseWriter, request *http.R
 }
 
 func (s *Server) handleProjectPick(writer http.ResponseWriter, request *http.Request) {
+	if s.capabilities.AppStore {
+		writeError(writer, http.StatusNotImplemented, "native_picker_required", errors.New("商店版必须使用原生目录选择器"))
+		return
+	}
 	var input struct{}
 	if err := decodeJSON(request, &input); err != nil {
 		writeError(writer, http.StatusBadRequest, "invalid_picker_request", err)
@@ -303,6 +400,10 @@ func (s *Server) handleProjectPick(writer http.ResponseWriter, request *http.Req
 }
 
 func (s *Server) handleDirectoryPick(writer http.ResponseWriter, request *http.Request) {
+	if s.capabilities.AppStore {
+		writeError(writer, http.StatusNotImplemented, "native_picker_required", errors.New("商店版必须使用原生目录选择器"))
+		return
+	}
 	var input struct {
 		Purpose string `json:"purpose"`
 	}
@@ -322,12 +423,36 @@ func (s *Server) handleDirectoryPick(writer http.ResponseWriter, request *http.R
 	writeJSON(writer, http.StatusOK, map[string]string{"path": strings.TrimSuffix(path, string(filepath.Separator))})
 }
 
+func (s *Server) handleDirectoryAuthorize(writer http.ResponseWriter, request *http.Request) {
+	if !s.capabilities.AppStore || s.bookmarks == nil {
+		writeError(writer, http.StatusNotImplemented, "directory_authorization_unavailable", errors.New("当前版本不需要安全作用域书签"))
+		return
+	}
+	var input struct {
+		Bookmark string `json:"bookmark"`
+	}
+	if err := decodeJSON(request, &input); err != nil {
+		writeError(writer, http.StatusBadRequest, "invalid_directory_authorization", err)
+		return
+	}
+	path, err := s.bookmarks.Authorize(input.Bookmark)
+	if err != nil {
+		writeError(writer, http.StatusBadRequest, "directory_authorization_failed", err)
+		return
+	}
+	writeJSON(writer, http.StatusOK, map[string]string{"path": path})
+}
+
 func (s *Server) handleProjectScan(writer http.ResponseWriter, request *http.Request) {
 	var input struct {
 		Root string `json:"root"`
 	}
 	if err := decodeJSON(request, &input); err != nil {
 		writeError(writer, http.StatusBadRequest, "invalid_scan", err)
+		return
+	}
+	if s.capabilities.AppStore && !s.pathAuthorized(input.Root) {
+		writeError(writer, http.StatusForbidden, "directory_authorization_required", errors.New("请先用系统目录选择器授权扫描目录"))
 		return
 	}
 	report, err := s.projects.Scan(request.Context(), input.Root)
@@ -408,7 +533,11 @@ func (s *Server) handleGitHubInstall(writer http.ResponseWriter, request *http.R
 	}
 	installContext, cancel := context.WithTimeout(request.Context(), 5*time.Minute)
 	defer cancel()
-	destination, err := s.github.Clone(installContext, repository, input.InstallRoot)
+	if s.capabilities.AppStore && !s.pathAuthorized(input.InstallRoot) {
+		writeError(writer, http.StatusForbidden, "directory_authorization_required", errors.New("请先用系统目录选择器授权安装目录"))
+		return
+	}
+	destination, err := s.github.Install(installContext, repository, input.InstallRoot)
 	if err != nil {
 		s.appendAudit(request.Context(), "github.install", "failed", "", 0, map[string]any{"repository": repository.URL, "destination": destination, "error": err.Error()})
 		writeError(writer, http.StatusBadRequest, "github_clone_failed", err)
@@ -432,6 +561,9 @@ func (s *Server) handleGitHubInstall(writer http.ResponseWriter, request *http.R
 }
 
 func (s *Server) handleProjectRegistrySync(writer http.ResponseWriter, request *http.Request) {
+	if !s.requireCapability(writer, s.capabilities.RegistrySync, "registry_sync_unavailable", "Mac App Store 版不读取外部项目注册表") {
+		return
+	}
 	var input struct{}
 	if err := decodeJSON(request, &input); err != nil {
 		writeError(writer, http.StatusBadRequest, "invalid_sync_request", err)
@@ -468,6 +600,9 @@ func (s *Server) handleProjectDeleteChoice(writer http.ResponseWriter, request *
 		writeError(writer, http.StatusBadRequest, "invalid_project_delete", err)
 		return
 	}
+	if input.RemoveFiles && !s.requireCapability(writer, s.capabilities.FullDelete, "full_delete_unavailable", "Mac App Store 版只能移除登记，不会删除磁盘文件") {
+		return
+	}
 	result, err := s.projects.DeleteProject(request.Context(), request.PathValue("id"), input.RemoveFiles, input.Confirmation)
 	if err != nil {
 		s.appendAudit(request.Context(), "project.delete", "failed", request.PathValue("id"), 0, map[string]any{"filesRequested": input.RemoveFiles, "error": err.Error()})
@@ -478,6 +613,9 @@ func (s *Server) handleProjectDeleteChoice(writer http.ResponseWriter, request *
 }
 
 func (s *Server) handleProjectStart(writer http.ResponseWriter, request *http.Request) {
+	if !s.requireCapability(writer, s.capabilities.ProjectLifecycle, "project_lifecycle_unavailable", "Mac App Store 版不执行任意 Shell 启动命令") {
+		return
+	}
 	status, err := s.projects.Start(request.Context(), request.PathValue("id"))
 	if err != nil {
 		s.appendAudit(request.Context(), "project.start", "failed", request.PathValue("id"), 0, map[string]any{"error": err.Error()})
@@ -488,6 +626,9 @@ func (s *Server) handleProjectStart(writer http.ResponseWriter, request *http.Re
 }
 
 func (s *Server) handleProjectStop(writer http.ResponseWriter, request *http.Request) {
+	if !s.requireCapability(writer, s.capabilities.ProjectLifecycle, "project_lifecycle_unavailable", "Mac App Store 版不执行任意 Shell 停止命令") {
+		return
+	}
 	ctx, cancel := context.WithTimeout(request.Context(), 15*time.Second)
 	defer cancel()
 	status, err := s.projects.Stop(ctx, request.PathValue("id"))
@@ -500,6 +641,9 @@ func (s *Server) handleProjectStop(writer http.ResponseWriter, request *http.Req
 }
 
 func (s *Server) handleProjectLogs(writer http.ResponseWriter, request *http.Request) {
+	if !s.requireCapability(writer, s.capabilities.ProjectLifecycle, "project_lifecycle_unavailable", "Mac App Store 版没有受管进程日志") {
+		return
+	}
 	limit, _ := strconv.Atoi(request.URL.Query().Get("limit"))
 	lines, err := s.projects.ReadLog(request.PathValue("id"), limit)
 	if err != nil {
@@ -510,6 +654,9 @@ func (s *Server) handleProjectLogs(writer http.ResponseWriter, request *http.Req
 }
 
 func (s *Server) handlePorts(writer http.ResponseWriter, request *http.Request) {
+	if !s.requireCapability(writer, s.capabilities.PortMonitoring, "port_monitoring_unavailable", "App Sandbox 不允许全系统端口监控") {
+		return
+	}
 	listeners, err := s.ports.List(request.Context())
 	if err != nil {
 		writeError(writer, http.StatusServiceUnavailable, "port_scan_failed", err)
@@ -519,6 +666,9 @@ func (s *Server) handlePorts(writer http.ResponseWriter, request *http.Request) 
 }
 
 func (s *Server) handlePortPool(writer http.ResponseWriter, request *http.Request) {
+	if !s.requireCapability(writer, s.capabilities.PortMonitoring, "port_monitoring_unavailable", "App Sandbox 不允许全系统端口监控") {
+		return
+	}
 	from, _ := strconv.Atoi(request.URL.Query().Get("from"))
 	to, _ := strconv.Atoi(request.URL.Query().Get("to"))
 	limit, _ := strconv.Atoi(request.URL.Query().Get("limit"))
@@ -531,6 +681,9 @@ func (s *Server) handlePortPool(writer http.ResponseWriter, request *http.Reques
 }
 
 func (s *Server) handleAllocationCreate(writer http.ResponseWriter, request *http.Request) {
+	if !s.requireCapability(writer, s.capabilities.PortMonitoring, "port_monitoring_unavailable", "Mac App Store 版不提供端口分配") {
+		return
+	}
 	var input struct {
 		Port      int    `json:"port"`
 		ProjectID string `json:"projectId"`
@@ -551,6 +704,9 @@ func (s *Server) handleAllocationCreate(writer http.ResponseWriter, request *htt
 }
 
 func (s *Server) handleAllocationDelete(writer http.ResponseWriter, request *http.Request) {
+	if !s.requireCapability(writer, s.capabilities.PortMonitoring, "port_monitoring_unavailable", "Mac App Store 版不提供端口分配") {
+		return
+	}
 	portNumber, err := strconv.Atoi(request.PathValue("port"))
 	if err != nil {
 		writeError(writer, http.StatusBadRequest, "invalid_port", errors.New("端口必须是数字"))
@@ -571,6 +727,9 @@ func (s *Server) handleAllocationDelete(writer http.ResponseWriter, request *htt
 }
 
 func (s *Server) handleReservations(writer http.ResponseWriter, request *http.Request) {
+	if !s.requireCapability(writer, s.capabilities.PortMonitoring, "port_monitoring_unavailable", "Mac App Store 版不提供端口预留") {
+		return
+	}
 	registry, err := s.store.Load(request.Context())
 	if err != nil {
 		writeError(writer, http.StatusInternalServerError, "reservations_load_failed", err)
@@ -580,6 +739,9 @@ func (s *Server) handleReservations(writer http.ResponseWriter, request *http.Re
 }
 
 func (s *Server) handleReservationCreate(writer http.ResponseWriter, request *http.Request) {
+	if !s.requireCapability(writer, s.capabilities.PortMonitoring, "port_monitoring_unavailable", "Mac App Store 版不提供端口预留") {
+		return
+	}
 	var reservation model.PortReservation
 	if err := decodeJSON(request, &reservation); err != nil {
 		writeError(writer, http.StatusBadRequest, "invalid_reservation", err)
@@ -596,6 +758,9 @@ func (s *Server) handleReservationCreate(writer http.ResponseWriter, request *ht
 }
 
 func (s *Server) handleReservationDelete(writer http.ResponseWriter, request *http.Request) {
+	if !s.requireCapability(writer, s.capabilities.PortMonitoring, "port_monitoring_unavailable", "Mac App Store 版不提供端口预留") {
+		return
+	}
 	portNumber, err := strconv.Atoi(request.PathValue("port"))
 	if err != nil {
 		writeError(writer, http.StatusBadRequest, "invalid_port", errors.New("端口必须是数字"))
@@ -657,6 +822,18 @@ func (s *Server) requireMutation(next http.HandlerFunc) http.HandlerFunc {
 		}
 		next(writer, request)
 	}
+}
+
+func (s *Server) requireCapability(writer http.ResponseWriter, enabled bool, code, message string) bool {
+	if enabled {
+		return true
+	}
+	writeError(writer, http.StatusNotImplemented, code, errors.New(message))
+	return false
+}
+
+func (s *Server) pathAuthorized(path string) bool {
+	return s.bookmarks != nil && s.bookmarks.Allows(path)
 }
 
 func (s *Server) hostGuard(next http.Handler) http.Handler {

@@ -2,7 +2,8 @@
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
-ARCHIVE=${1:-"$ROOT/outputs/ProjectDock-0.10.0/ProjectDock-0.10.0-macos-arm64.zip"}
+VERSION=${PROJECTDOCK_VERSION:-0.10.1}
+ARCHIVE=${1:-"$ROOT/outputs/ProjectDock-${VERSION}/ProjectDock-${VERSION}-macos-arm64.zip"}
 PROFILE=${PROJECTDOCK_NOTARY_PROFILE:-ProjectDock}
 STAGE=$(mktemp -d "${TMPDIR:-/tmp}/projectdock-notary.XXXXXX")
 
@@ -20,7 +21,7 @@ xcrun stapler staple "$STAGE/ProjectDock.app"
 xcrun stapler validate "$STAGE/ProjectDock.app"
 codesign --verify --deep --strict --verbose=2 "$STAGE/ProjectDock.app"
 spctl -a -vvv -t execute "$STAGE/ProjectDock.app"
-NOTARIZED_ARCHIVE="$STAGE/ProjectDock-0.10.0-notarized.zip"
+NOTARIZED_ARCHIVE="$STAGE/ProjectDock-${VERSION}-notarized.zip"
 (
   cd "$STAGE"
   COPYFILE_DISABLE=1 zip -qryX "$NOTARIZED_ARCHIVE" ProjectDock.app

@@ -21,6 +21,8 @@ const state = {
   deletingProjectId: "",
 };
 
+const nativeDirectoryRequests = new Map();
+
 let refreshTimer;
 let refreshRun;
 let pendingRefresh;
@@ -172,7 +174,15 @@ function toggleLaunchAtLogin(event) {
 }
 
 function receiveNativeState(payload) {
-  if (payload?.kind !== "launchAtLogin") return;
+	if (payload?.kind === "directoryPicker") {
+		const pending = nativeDirectoryRequests.get(payload.requestId);
+		if (!pending) return;
+		nativeDirectoryRequests.delete(payload.requestId);
+		if (payload.path) pending.resolve({ path: payload.path });
+		else pending.reject(new Error(payload.error || "目录选择失败"));
+		return;
+	}
+	if (payload?.kind !== "launchAtLogin") return;
   const settings = document.querySelector("#native-settings");
   const toggle = document.querySelector("#launch-at-login");
   const detail = document.querySelector("#launch-at-login-detail");
@@ -248,6 +258,7 @@ async function performRefresh({ quiet, announce }) {
 		const snapshot = await request("/api/snapshot");
 		const signature = snapshotContentSignature(snapshot);
 		state.snapshot = snapshot;
+		applyCapabilities(snapshot.capabilities || {});
 		if (signature !== state.snapshotSignature) {
 			state.snapshotSignature = signature;
 			renderSnapshot(state.snapshot, state.filters);
@@ -268,7 +279,32 @@ function snapshotContentSignature(snapshot) {
 		audit: snapshot.audit,
 		ignoredCount: snapshot.ignoredCount,
 		portPool: snapshot.portPool,
+		capabilities: snapshot.capabilities,
 	});
+}
+
+function applyCapabilities(capabilities) {
+	if (!capabilities.appStore) return;
+	document.querySelector('[data-nav="ports"]')?.setAttribute("hidden", "");
+	document.querySelector('[data-view="ports"]')?.setAttribute("hidden", "");
+	document.querySelector(".protocol-panel")?.setAttribute("hidden", "");
+	document.querySelector("#dashboard-ports")?.closest(".panel")?.setAttribute("hidden", "");
+	document.querySelector(".sidebar-note")?.setAttribute("hidden", "");
+	document.querySelector('[data-action="reveal-full-delete"]')?.setAttribute("hidden", "");
+	const status = document.querySelector(".sidebar-status div");
+	if (status) status.innerHTML = `<strong>${t("Mac App Store 沙盒模式")}</strong><span>${t("仅访问用户授权目录")}</span>`;
+	const dashboardCopy = document.querySelector("#dashboard-projects")?.closest(".panel")?.querySelector(".panel-heading p");
+	if (dashboardCopy) dashboardCopy.textContent = t("查看已授权并登记的本地项目");
+	const discoveryCopy = document.querySelector("#project-drop-zone > div > p:last-child");
+	if (discoveryCopy) discoveryCopy.textContent = t("通过系统目录选择器授权后，可安全安装、扫描和登记项目。");
+	const projectsCopy = document.querySelector("#projects-table")?.closest(".panel")?.previousElementSibling?.querySelector(".section-intro");
+	if (projectsCopy) projectsCopy.textContent = t("这里显示已获目录授权并完成登记的项目；商店版不会执行项目启动命令。");
+	const githubCopy = document.querySelector("#github-dialog .dialog-copy");
+	if (githubCopy) githubCopy.textContent = t("ProjectDock 会通过 GitHub HTTPS 下载仓库 ZIP、调用已配置的 AI 分析项目，再登记到用户授权目录；不会自动执行依赖安装或模型生成的命令。");
+	for (const name of ["ports", "launchPorts", "startCommand", "stopCommand"]) {
+		document.querySelector(`#project-form [name="${name}"]`)?.closest("label")?.setAttribute("hidden", "");
+	}
+	if (state.activeView === "ports") navigate("projects");
 }
 
 function refreshInterval() {
@@ -526,9 +562,22 @@ async function openGitHubInstall() {
 
 async function pickDirectory(purpose, formSelector, fieldName) {
   await runBusy(async () => {
-    const result = await directoryApi.pick(purpose);
+	const result = state.snapshot.capabilities?.appStore && nativeBridge()
+		? await pickNativeDirectory(purpose)
+		: await directoryApi.pick(purpose);
     document.querySelector(formSelector).elements[fieldName].value = result.path;
   });
+}
+
+function pickNativeDirectory(purpose) {
+	return new Promise((resolve, reject) => {
+		const requestId = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
+		nativeDirectoryRequests.set(requestId, { resolve, reject });
+		if (!postNativeMessage({ action: "pickDirectory", purpose, requestId })) {
+			nativeDirectoryRequests.delete(requestId);
+			reject(new Error("原生目录选择器不可用"));
+		}
+	});
 }
 
 async function installGitHubProject(event) {
@@ -597,7 +646,9 @@ async function importScanSelection() {
 
 async function pickFolder() {
   await runBusy(async () => {
-    const report = await projectApi.pickFolder();
+	const report = state.snapshot.capabilities?.appStore && nativeBridge()
+		? await projectApi.importPaths([(await pickNativeDirectory("project")).path], "manual")
+		: await projectApi.pickFolder();
     toast(`已添加 ${report.imported} 个项目文件夹`, "success");
     navigate("projects");
     await refresh({ announce: false });

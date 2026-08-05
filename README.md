@@ -36,7 +36,7 @@ Codex、TRAE、Claude 可以通过随 APP 一起封装的 `projectctl` 主动登
 macOS Apple Silicon：
 
 ```bash
-BIN="./outputs/ProjectDock-0.10.0/projectctl-darwin-arm64"
+BIN="./outputs/ProjectDock-0.10.1/projectctl-0.10.1-darwin-arm64"
 
 "$BIN" doctor
 "$BIN" project add --id projectdock-console --name ProjectDock --path "$PWD" --source manual
@@ -51,10 +51,11 @@ BIN="./outputs/ProjectDock-0.10.0/projectctl-darwin-arm64"
 "$BIN" port unassign 43110 --project projectdock-console
 ```
 
-也可以解压并运行原生 APP：
+也可以从 GitHub Release 下载已公证的安装包直接安装，或解压原生 APP：
 
 ```text
-outputs/ProjectDock-0.10.0/ProjectDock-0.10.0-macos-arm64.zip
+ProjectDock-0.10.1-macos-arm64.pkg
+ProjectDock-0.10.1-macos-arm64.zip
 ```
 
 首次运行 APP 后，在 macOS 桌面组件库中搜索 `ProjectDock`，可添加小号、中号或大号组件。大号组件使用一个总览卡片和项目、端口两个信息面板，避免真实桌面宽度下数字和中文标签竖排。宿主 APP 每分钟更新一次脱敏快照并请求系统刷新；最终刷新时机仍由 WidgetKit 调度。
@@ -110,7 +111,7 @@ projectctl port unassign 5173 --project my-project
 - macOS 小号、中号、大号桌面组件已在系统 WidgetKit 模拟器中使用真实 App Group 快照完成视觉验收；扩展已注册到本机组件库。
 - APP 自身不调用 Docker；只有被管理项目明确登记 Docker Compose 启动命令时，ProjectDock 才会按用户操作执行那个项目自己的命令。
 - ProjectDock 不默认探测 Obsidian 或三端注册表；只有显式设置 `PROJECTDOCK_PROJECTS_FILE` 时才启用可选注册表导入。
-- 当前 0.10.0 APP、Widget 扩展和内置 CLI 使用 Developer ID 与 Apple 安全时间戳签名；Apple 公证已接受，票据已装订，`stapler validate` 与 Gatekeeper `spctl` 验证通过。
+- 当前 0.10.1 APP、Widget 扩展和内置 CLI 使用 Developer ID 与 Apple 安全时间戳签名；GitHub Release 同时提供已公证并装订票据的 ZIP 与 PKG，均通过 Gatekeeper 验证。
 - 交付 ZIP 会移除 `__MACOSX/._*` AppleDouble，并在解包后执行深度严格验签。
 
 架构与安全边界见 `docs/ARCHITECTURE.md`，参与开发前请阅读 `CONTRIBUTING.md` 与 `SECURITY.md`。

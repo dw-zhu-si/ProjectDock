@@ -206,6 +206,15 @@ button {
   transition: 120ms ease;
 }
 
+.nav-item[hidden],
+.panel[hidden],
+.protocol-panel[hidden],
+.sidebar-note[hidden],
+.delete-option[hidden],
+#project-form label[hidden] {
+  display: none !important;
+}
+
 .nav-item:hover {
   background: var(--surface);
   color: var(--text);

@@ -3,9 +3,10 @@ set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 DESTINATION=${1:-"$ROOT/work/native-070"}
+VERSION=${PROJECTDOCK_VERSION:-0.10.1}
 EMBEDDED_PROJECTCTL="$ROOT/work/build/projectctl-darwin-arm64"
 PROJECTCTL=${PROJECTCTL_BINARY:-"$EMBEDDED_PROJECTCTL"}
-DERIVED_DATA=${PROJECTDOCK_DERIVED_DATA:-"${TMPDIR:-/tmp}/ProjectDockDerivedData-0100"}
+DERIVED_DATA=${PROJECTDOCK_DERIVED_DATA:-"${TMPDIR:-/tmp}/ProjectDockDerivedData-${VERSION}"}
 SIGNING_IDENTITY=${PROJECTDOCK_SIGNING_IDENTITY:-"Developer ID Application"}
 STAGE=$(mktemp -d "${TMPDIR:-/tmp}/projectdock-app.XXXXXX")
 BUILD_ROOT="$STAGE/source"
@@ -16,18 +17,18 @@ trap 'rm -rf "$STAGE"' EXIT
 
 mkdir -p "$DESTINATION"
 DESTINATION=$(CDPATH= cd -- "$DESTINATION" && pwd)
-ARCHIVE="$DESTINATION/ProjectDock-0.10.0-macos-arm64.zip"
+ARCHIVE="$DESTINATION/ProjectDock-${VERSION}-macos-arm64.zip"
 mkdir -p "$(dirname "$EMBEDDED_PROJECTCTL")"
 if [ -z "${PROJECTCTL_BINARY:-}" ]; then
-  (cd "$ROOT" && CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o "$EMBEDDED_PROJECTCTL" ./cmd/projectctl)
+  (cd "$ROOT" && CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o "$EMBEDDED_PROJECTCTL" ./cmd/projectctl)
   PROJECTCTL="$EMBEDDED_PROJECTCTL"
 fi
 if [ ! -x "$PROJECTCTL" ]; then
   echo "缺少可执行文件: $PROJECTCTL" >&2
   exit 1
 fi
-if [ "$("$PROJECTCTL" version)" != "projectctl 0.10.0" ]; then
-  echo "待嵌入的 projectctl 版本不是 0.10.0" >&2
+if [ "$("$PROJECTCTL" version)" != "projectctl $VERSION" ]; then
+  echo "待嵌入的 projectctl 版本不是 $VERSION" >&2
   exit 1
 fi
 if [ "$PROJECTCTL" != "$EMBEDDED_PROJECTCTL" ]; then
