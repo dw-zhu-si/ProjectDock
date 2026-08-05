@@ -4,8 +4,14 @@ import ServiceManagement
 import WebKit
 import WidgetKit
 
-private let projectDockURL = URL(string: "http://127.0.0.1:43110")!
+#if APP_STORE
+private let projectDockPort = 43111
+private let projectDockAppGroup = "L4G2HAQ5B5.com.zhusi.projectdock.store"
+#else
+private let projectDockPort = 43110
 private let projectDockAppGroup = "L4G2HAQ5B5.com.zhusi.projectdock"
+#endif
+private let projectDockURL = URL(string: "http://127.0.0.1:\(projectDockPort)")!
 
 private enum NativeL10n {
     private static let translations: [String: [String: String]] = [
@@ -406,7 +412,7 @@ final class ProjectDockApp: NSObject, NSApplicationDelegate, NSWindowDelegate, W
         let process = Process()
         process.executableURL = binary
         process.arguments = [
-            "serve", "--listen", "127.0.0.1:43110", "--open=false",
+            "serve", "--listen", "127.0.0.1:\(projectDockPort)", "--open=false",
             "--parent-pid", String(ProcessInfo.processInfo.processIdentifier),
         ]
         process.standardOutput = FileHandle.nullDevice
@@ -438,7 +444,7 @@ final class ProjectDockApp: NSObject, NSApplicationDelegate, NSWindowDelegate, W
             }
             guard attemptsRemaining > 0 else {
                 self.isConnecting = false
-                self.presentStartupError("本地服务未能在 6 秒内启动。请确认 43110 端口没有被其他程序占用。")
+                self.presentStartupError("本地服务未能在 6 秒内启动。请确认 \(projectDockPort) 端口没有被其他程序占用。")
                 return
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {

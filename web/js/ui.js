@@ -156,7 +156,7 @@ export function renderShell(root) {
                   <label class="sr-only" for="probe-method">请求方法</label>
                   <select id="probe-method" name="method"><option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option><option>HEAD</option></select>
                   <label class="sr-only" for="probe-url">接口地址</label>
-                  <input id="probe-url" name="url" type="url" value="http://127.0.0.1:43110/api/health" required>
+                  <input id="probe-url" name="url" type="url" value="${escapeHTML(window.location.origin)}/api/health" required>
                   <button class="button primary" type="submit">发送请求</button>
                 </div>
                 <div class="editor-tabs" role="tablist" aria-label="请求内容">

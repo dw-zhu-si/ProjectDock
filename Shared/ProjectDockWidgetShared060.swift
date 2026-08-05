@@ -1,7 +1,11 @@
 import Foundation
 
 enum ProjectDockWidgetConfiguration {
+#if APP_STORE
+    static let appGroupIdentifier = "L4G2HAQ5B5.com.zhusi.projectdock.store"
+#else
     static let appGroupIdentifier = "L4G2HAQ5B5.com.zhusi.projectdock"
+#endif
     static let snapshotFilename = "projectdock-widget-snapshot.json"
 
     static func snapshotURL(fileManager: FileManager = .default) -> URL? {

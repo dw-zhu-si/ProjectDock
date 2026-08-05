@@ -28,4 +28,7 @@ jobs:
         run: |
           mkdir -p work/build
           go build -o work/build/projectctl-darwin-arm64 ./cmd/projectctl
-      - run: xcodebuild -project ProjectDock.xcodeproj -scheme ProjectDock -configuration Release CODE_SIGNING_ALLOWED=NO build
+      - name: Build direct distribution app
+        run: xcodebuild -project ProjectDock.xcodeproj -scheme ProjectDock -configuration Release CODE_SIGNING_ALLOWED=NO build
+      - name: Build App Store sandbox variant
+        run: xcodebuild -project ProjectDock.xcodeproj -scheme ProjectDock -configuration AppStore CODE_SIGNING_ALLOWED=NO build

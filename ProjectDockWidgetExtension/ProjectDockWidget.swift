@@ -2,7 +2,11 @@ import SwiftUI
 import WidgetKit
 
 private enum WidgetL10n {
+#if APP_STORE
+    private static let appGroup = "L4G2HAQ5B5.com.zhusi.projectdock.store"
+#else
     private static let appGroup = "L4G2HAQ5B5.com.zhusi.projectdock"
+#endif
     private static let locales = ["zh-Hans", "zh-Hant", "en", "ja", "ko", "de", "fr", "es", "pt-BR", "ru", "ar"]
     private static let values: [String: [String]] = [
         "displayName": ["ProjectDock 项目与端口", "ProjectDock 專案與連接埠", "ProjectDock Projects & Ports", "ProjectDock プロジェクトとポート", "ProjectDock 프로젝트 및 포트", "ProjectDock Projekte & Ports", "ProjectDock Projets et ports", "ProjectDock Proyectos y puertos", "ProjectDock Projetos e portas", "ProjectDock Проекты и порты", "مشاريع ومنافذ ProjectDock"],
