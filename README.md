@@ -1,5 +1,7 @@
 # ProjectDock
 
+> A native macOS project runtime manager for registering local projects, controlling services, checking health, managing ports, and safely orchestrating development workflows.
+
 ProjectDock 是个人独立开发的原生 macOS 本地项目控制台，与任何任职单位无关。APP 内置自己的 Go 控制服务、Web 界面和本地注册表，不依赖 Docker、Obsidian、TRAE、Codex、Claude 或其他后台系统才能启动和使用。
 
 Codex、TRAE、Claude 可以通过随 APP 一起封装的 `projectctl` 主动登记项目；这些接入都是可选能力，不是 ProjectDock 的运行依赖。
