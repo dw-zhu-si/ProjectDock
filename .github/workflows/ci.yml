@@ -23,5 +23,8 @@ jobs:
       - run: go vet ./...
       - run: node scripts/check-i18n.mjs
       - run: for file in web/js/*.js; do node --check "$file"; done
+      - name: Build embedded projectctl
+        run: |
+          mkdir -p work/build
+          go build -o work/build/projectctl-darwin-arm64 ./cmd/projectctl
       - run: xcodebuild -project ProjectDock.xcodeproj -scheme ProjectDock -configuration Release CODE_SIGNING_ALLOWED=NO build
-
