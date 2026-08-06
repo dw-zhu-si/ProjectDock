@@ -306,8 +306,8 @@ ProjectDock 按“本地优先、最小权限、操作可追踪”设计：
 
 ProjectDock 不运营云端账号、广告或分析服务。可选 AI 请求直接发送到用户配置的模型服务，可选 GitHub 安装直接连接 GitHub。详情见：
 
-- [隐私政策](https://dw-zhu-si.github.io/ProjectDock/privacy.html)
-- [用户支持](https://dw-zhu-si.github.io/ProjectDock/support.html)
+- [隐私政策](https://pm.jcm99.com/apple/projectdock/privacy.html)
+- [用户支持](https://pm.jcm99.com/apple/projectdock/support.html)
 - [安全政策](SECURITY.md)
 
 ## 开发与验证
