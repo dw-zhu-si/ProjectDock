@@ -108,7 +108,10 @@ final class ProjectDockApp: NSObject, NSApplicationDelegate, NSWindowDelegate, W
     private var serviceReady = false
     private var isConnecting = false
     private var isTerminating = false
-    private var shouldShowWindowWhenActivated = !ProcessInfo.processInfo.arguments.contains("--background")
+    // Login-item launches must stay headless. A normal user reopen is handled by
+    // applicationShouldHandleReopen, while explicit projectdock://open URLs still
+    // go through handleProjectDockURL.
+    private var shouldShowWindowWhenActivated = false
     private var reconnectWorkItem: DispatchWorkItem?
     private var interfaceLocale = NativeL10n.initialLocale()
 
@@ -126,6 +129,10 @@ final class ProjectDockApp: NSObject, NSApplicationDelegate, NSWindowDelegate, W
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         installMainMenu()
+        let arguments = ProcessInfo.processInfo.arguments
+        let explicitlyForeground = arguments.contains("--foreground")
+        let explicitlyBackground = arguments.contains("--background")
+        shouldShowWindowWhenActivated = explicitlyForeground || (!explicitlyBackground && !loginItemSelected)
         connectToProjectDock()
     }
 
