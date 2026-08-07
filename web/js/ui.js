@@ -57,7 +57,7 @@ export function renderShell(root) {
           <div class="topbar-actions">
             <span class="sync-state"><i></i><span id="sync-label">正在同步</span></span>
             <button class="button secondary" type="button" data-action="refresh">立即刷新</button>
-            <button class="button secondary" type="button" data-action="open-ai-settings">AI 设置</button>
+            <button class="button secondary" type="button" data-action="open-model-settings">AI 设置</button>
             <button class="button primary" type="button" data-action="new-project">登记项目</button>
           </div>
         </header>
@@ -216,9 +216,9 @@ export function renderShell(root) {
         <div class="dialog-header"><div><p class="panel-kicker">AI MODEL SETTINGS</p><h2>AI 模型配置</h2></div><button class="icon-button" type="button" data-action="close-ai-dialog" aria-label="关闭">×</button></div>
         <p class="dialog-copy">用于分析 GitHub 项目的技术栈和人工安装步骤。API 密钥只保存到 macOS 钥匙串，不写入 ProjectDock 注册表或审计日志。</p>
         <div class="form-grid">
-          <label>模型供应商<select name="provider"><option value="openai">OpenAI</option><option value="dashscope">阿里云百炼（标准 API）</option><option value="dashscope-plan">阿里云百炼（Coding Plan）</option><option value="local">本机模型</option><option value="custom">自定义兼容接口</option></select><small>选择后自动填写对应接口；密钥必须由同一供应商签发</small></label>
+          <label>模型供应商<select name="provider"><option value="custom">通用兼容接口</option><option value="dashscope">阿里云百炼（标准 API）</option><option value="dashscope-plan">阿里云百炼（Coding Plan）</option><option value="local">本机模型</option></select><small>选择后自动填写对应接口；密钥必须由同一供应商签发</small></label>
           <label>模型名称<input name="model" placeholder="例如 gpt-5-mini 或 qwen-plus" required></label>
-          <label class="full-field">OpenAI 兼容接口基础地址<input name="baseUrl" type="url" placeholder="https://api.openai.com/v1" required><small>只允许 HTTPS；本机模型可使用 127.0.0.1 / localhost 的 HTTP 地址</small></label>
+          <label class="full-field">兼容模型接口基础地址<input name="baseUrl" type="url" placeholder="https://example.com/v1" required><small>只允许 HTTPS；本机模型可使用 127.0.0.1 / localhost 的 HTTP 地址</small></label>
           <label>API 密钥<input name="apiKey" type="password" autocomplete="new-password" placeholder="已保存时可留空"><small>远程接口需要密钥；本机回环模型可留空</small></label>
         </div>
         <p id="ai-settings-status" class="form-hint">正在读取配置…</p>
@@ -235,7 +235,7 @@ export function renderShell(root) {
           <label class="full-field">项目安装目录<div class="input-action"><input name="installRoot" placeholder="/Users/name/Projects" required><button class="mini-button" type="button" data-action="pick-install-root">选择…</button></div><small>项目将安装到“安装目录/仓库名称”</small></label>
         </div>
         <div id="github-ai-status" class="inline-status neutral">正在检查 AI 配置…</div>
-        <div class="dialog-actions"><button class="button secondary" type="button" data-action="open-ai-settings">配置 AI</button><button id="github-install-submit" class="button primary" type="submit" disabled>安装并登记</button></div>
+        <div class="dialog-actions"><button class="button secondary" type="button" data-action="open-model-settings">配置 AI</button><button id="github-install-submit" class="button primary" type="submit" disabled>安装并登记</button></div>
       </form>
     </dialog>
 

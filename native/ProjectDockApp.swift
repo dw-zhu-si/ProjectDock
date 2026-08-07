@@ -477,7 +477,11 @@ final class ProjectDockApp: NSObject, NSApplicationDelegate, NSWindowDelegate, W
                 if self.serviceProcess?.isRunning != true {
                     try self.launchBundledService()
                 }
-                self.waitForService(attemptsRemaining: 60)
+                // App Store review machines can spend several seconds validating
+                // the embedded helper and creating the sandbox container on the
+                // first launch. Keep retrying long enough to avoid a false
+                // startup failure during that one-time initialization.
+                self.waitForService(attemptsRemaining: 300)
             } catch {
                 self.isConnecting = false
                 self.presentStartupError(error.localizedDescription)
@@ -534,7 +538,7 @@ final class ProjectDockApp: NSObject, NSApplicationDelegate, NSWindowDelegate, W
             }
             guard attemptsRemaining > 0 else {
                 self.isConnecting = false
-                self.presentStartupError("本地服务未能在 6 秒内启动。请确认 \(projectDockPort) 端口没有被其他程序占用。")
+                self.presentStartupError("本地服务未能在 30 秒内启动。请确认 \(projectDockPort) 端口没有被其他程序占用，然后重试。")
                 return
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {

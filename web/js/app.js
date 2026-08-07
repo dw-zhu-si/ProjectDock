@@ -28,7 +28,6 @@ let refreshRun;
 let pendingRefresh;
 
 const aiProviderURLs = {
-  openai: "https://api.openai.com/v1",
   dashscope: "https://dashscope.aliyuncs.com/compatible-mode/v1",
   "dashscope-plan": "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1",
   local: "http://127.0.0.1:11434/v1",
@@ -115,7 +114,7 @@ async function handleClick(event) {
   if (action === "refresh") return refresh();
   if (action === "open-login-items-settings") return postNativeMessage({ action: "openLoginItemsSettings" });
   if (action === "pick-folder") return pickFolder();
-  if (action === "open-ai-settings") return openAISettings();
+  if (action === "open-model-settings") return openModelSettings();
   if (action === "close-ai-dialog") return document.querySelector("#ai-dialog").close();
   if (action === "github-install") return openGitHubInstall();
   if (action === "close-github-dialog") return document.querySelector("#github-dialog").close();
@@ -284,6 +283,12 @@ function snapshotContentSignature(snapshot) {
 }
 
 function applyCapabilities(capabilities) {
+	const aiEnabled = capabilities.aiEnabled !== false;
+	const githubInstall = capabilities.githubInstall !== false;
+	document.querySelector('[data-action="open-model-settings"]')?.toggleAttribute("hidden", !aiEnabled);
+	document.querySelector('#ai-dialog')?.toggleAttribute("hidden", !aiEnabled);
+	document.querySelector('[data-action="github-install"]')?.toggleAttribute("hidden", !githubInstall);
+	document.querySelector('#github-dialog')?.toggleAttribute("hidden", !githubInstall);
 	if (!capabilities.appStore) return;
 	document.querySelector('[data-nav="ports"]')?.setAttribute("hidden", "");
 	document.querySelector('[data-view="ports"]')?.setAttribute("hidden", "");
@@ -296,11 +301,13 @@ function applyCapabilities(capabilities) {
 	const dashboardCopy = document.querySelector("#dashboard-projects")?.closest(".panel")?.querySelector(".panel-heading p");
 	if (dashboardCopy) dashboardCopy.textContent = t("查看已授权并登记的本地项目");
 	const discoveryCopy = document.querySelector("#project-drop-zone > div > p:last-child");
-	if (discoveryCopy) discoveryCopy.textContent = t("通过系统目录选择器授权后，可安全安装、扫描和登记项目。");
+	if (discoveryCopy) discoveryCopy.textContent = githubInstall
+		? t("通过系统目录选择器授权后，可安全安装、扫描和登记项目。")
+		: t("通过系统目录选择器授权后，可扫描和登记本地项目。商店版不提供远程项目安装或 AI 功能。");
 	const projectsCopy = document.querySelector("#projects-table")?.closest(".panel")?.previousElementSibling?.querySelector(".section-intro");
 	if (projectsCopy) projectsCopy.textContent = t("这里显示已获目录授权并完成登记的项目；商店版不会执行项目启动命令。");
 	const githubCopy = document.querySelector("#github-dialog .dialog-copy");
-	if (githubCopy) githubCopy.textContent = t("ProjectDock 会通过 GitHub HTTPS 下载仓库 ZIP、调用已配置的 AI 分析项目，再登记到用户授权目录；不会自动执行依赖安装或模型生成的命令。");
+	if (githubCopy && githubInstall) githubCopy.textContent = t("ProjectDock 会通过 GitHub HTTPS 下载仓库 ZIP、调用已配置的 AI 分析项目，再登记到用户授权目录；不会自动执行依赖安装或模型生成的命令。");
 	for (const name of ["ports", "launchPorts", "startCommand", "stopCommand"]) {
 		document.querySelector(`#project-form [name="${name}"]`)?.closest("label")?.setAttribute("hidden", "");
 	}
@@ -472,7 +479,7 @@ async function deleteProjectFiles(event) {
   });
 }
 
-async function openAISettings() {
+async function openModelSettings() {
   const githubDialog = document.querySelector("#github-dialog");
   if (githubDialog.open) githubDialog.close();
   const dialog = document.querySelector("#ai-dialog");
@@ -481,7 +488,7 @@ async function openAISettings() {
   document.querySelector("#ai-settings-status").textContent = t("正在读取配置…");
   try {
     const settings = await aiApi.get();
-    form.elements.baseUrl.value = settings.baseUrl || "https://api.openai.com/v1";
+    form.elements.baseUrl.value = settings.baseUrl || "https://example.com/v1";
     form.elements.provider.value = inferAIProvider(form.elements.baseUrl.value);
     form.elements.model.value = settings.model || "";
     form.elements.apiKey.value = "";

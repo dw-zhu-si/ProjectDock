@@ -12,18 +12,6 @@ const slides = [
     subtitle: "集中查看、整理并安全管理你的项目目录。",
   },
   {
-    image: "github-install.png",
-    eyebrow: "AI 安装向导",
-    title: "粘贴 GitHub 地址，AI 帮你读懂项目",
-    subtitle: "选择安装目录，让已配置的模型分析仓库并引导安装。",
-  },
-  {
-    image: "ai-settings.png",
-    eyebrow: "自选模型",
-    title: "接入你的 AI 模型",
-    subtitle: "兼容 OpenAI 接口，凭证仅安全保存在本机钥匙串。",
-  },
-  {
     image: "local-scan.png",
     eyebrow: "本地发现",
     title: "扫描本地目录，发现可管理项目",

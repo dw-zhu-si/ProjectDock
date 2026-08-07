@@ -60,6 +60,7 @@ type Snapshot struct {
 
 type Capabilities struct {
 	AppStore         bool `json:"appStore"`
+	AIEnabled        bool `json:"aiEnabled"`
 	PortMonitoring   bool `json:"portMonitoring"`
 	ProjectLifecycle bool `json:"projectLifecycle"`
 	FullDelete       bool `json:"fullDelete"`
@@ -110,7 +111,8 @@ func NewWithOptions(st *store.Store, portService *ports.Service, projectService 
 	capabilities := Capabilities{
 		AppStore: options.AppStore, PortMonitoring: !options.AppStore,
 		ProjectLifecycle: !options.AppStore, FullDelete: !options.AppStore,
-		RegistrySync: !options.AppStore, GitHubInstall: true,
+		RegistrySync: !options.AppStore, AIEnabled: !options.AppStore,
+		GitHubInstall: !options.AppStore,
 		DirectoryAccess: true, APIProbe: true,
 	}
 	var bookmarks *sandboxbookmark.Manager
@@ -465,6 +467,10 @@ func (s *Server) handleProjectScan(writer http.ResponseWriter, request *http.Req
 }
 
 func (s *Server) handleAISettingsGet(writer http.ResponseWriter, request *http.Request) {
+	if !s.capabilities.AIEnabled {
+		writeError(writer, http.StatusNotFound, "feature_disabled", errors.New("商店版已停用 AI 模型功能"))
+		return
+	}
 	settings, err := s.ai.Get(request.Context())
 	if err != nil {
 		writeError(writer, http.StatusInternalServerError, "ai_settings_failed", err)
@@ -474,6 +480,10 @@ func (s *Server) handleAISettingsGet(writer http.ResponseWriter, request *http.R
 }
 
 func (s *Server) handleAISettingsSave(writer http.ResponseWriter, request *http.Request) {
+	if !s.capabilities.AIEnabled {
+		writeError(writer, http.StatusNotFound, "feature_disabled", errors.New("商店版已停用 AI 模型功能"))
+		return
+	}
 	var input struct {
 		BaseURL string `json:"baseUrl"`
 		Model   string `json:"model"`
@@ -493,6 +503,10 @@ func (s *Server) handleAISettingsSave(writer http.ResponseWriter, request *http.
 }
 
 func (s *Server) handleAISettingsVerify(writer http.ResponseWriter, request *http.Request) {
+	if !s.capabilities.AIEnabled {
+		writeError(writer, http.StatusNotFound, "feature_disabled", errors.New("商店版已停用 AI 模型功能"))
+		return
+	}
 	var input struct{}
 	if err := decodeJSON(request, &input); err != nil {
 		writeError(writer, http.StatusBadRequest, "invalid_ai_verification", err)
@@ -509,6 +523,10 @@ func (s *Server) handleAISettingsVerify(writer http.ResponseWriter, request *htt
 }
 
 func (s *Server) handleGitHubInstall(writer http.ResponseWriter, request *http.Request) {
+	if !s.capabilities.GitHubInstall {
+		writeError(writer, http.StatusNotFound, "feature_disabled", errors.New("商店版已停用远程项目安装功能"))
+		return
+	}
 	var input struct {
 		URL         string `json:"url"`
 		InstallRoot string `json:"installRoot"`

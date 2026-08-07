@@ -131,6 +131,32 @@ func TestAppStoreServerRejectsUnavailableOperations(t *testing.T) {
 	}
 }
 
+func TestAppStoreServerDisablesAIAndRemoteInstall(t *testing.T) {
+	server := testAppStoreServer(t, emptyScanner{})
+	for _, test := range []struct {
+		method string
+		path   string
+		body   string
+	}{
+		{http.MethodGet, "/api/settings/ai", ""},
+		{http.MethodPut, "/api/settings/ai", `{}`},
+		{http.MethodPost, "/api/settings/ai/verify", `{}`},
+		{http.MethodPost, "/api/github/install", `{}`},
+	} {
+		request := httptest.NewRequest(test.method, "http://127.0.0.1"+test.path, bytes.NewBufferString(test.body))
+		request.Host = "127.0.0.1"
+		if test.body != "" {
+			request.Header.Set("Content-Type", "application/json")
+			request.Header.Set("X-ProjectDock-Token", server.token)
+		}
+		response := httptest.NewRecorder()
+		server.Handler().ServeHTTP(response, request)
+		if response.Code != http.StatusNotFound {
+			t.Fatalf("%s returned %d instead of 404: %s", test.path, response.Code, response.Body.String())
+		}
+	}
+}
+
 func TestReadSnapshotsShareOnePortObservation(t *testing.T) {
 	scanner := &countingScanner{}
 	server := testServerWithScanner(t, scanner)
